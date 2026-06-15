@@ -102,7 +102,12 @@ IF29/
 ├── README_data.md
 ├── requirements.txt
 ├── docs/LABELISATION.md
+├── docs/EQUIPE_ROLES.md
+├── docs/PROMPT_SOUTENANCE_CLAUDE.md
 ├── scripts/import_local.sh
+├── scripts/run_demo.sh
+├── demo/
+│   └── app.py              # Portail web de démonstration (Streamlit)
 ├── raw/
 ├── users_aggregated.csv
 ├── users_labeled_manual.csv
@@ -112,6 +117,19 @@ IF29/
 ├── Groupe3_profils_atypiques_Sup.ipynb
 └── Groupe3_profils_atypiques_Final.ipynb
 ```
+
+---
+
+## Portail de démonstration (soutenance)
+
+Interface web centralisée pour présenter le projet au jury :
+
+```bash
+bash scripts/run_demo.sh
+# ou : streamlit run demo/app.py
+```
+
+Ouvre **http://localhost:8501** — navigation par sections (pipeline, EDA, labellisation, ML, synthèse, notebooks).
 
 ---
 
@@ -180,7 +198,7 @@ Détails : [`docs/LABELISATION.md`](docs/LABELISATION.md)
 | L1 Rapport | Notebooks + `docs/LABELISATION.md` |
 | L2 Code | Ce dépôt + README |
 | L3 Soutenance | `Groupe3_profils_atypiques_Final.ipynb` |
-| L4 Rôles | À compléter par l'équipe |
+| L4 Rôles | [`docs/EQUIPE_ROLES.md`](docs/EQUIPE_ROLES.md) |
 
 ---
 

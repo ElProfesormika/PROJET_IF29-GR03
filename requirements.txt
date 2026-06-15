@@ -5,3 +5,4 @@ xgboost>=2.0
 matplotlib>=3.7
 seaborn>=0.13
 pymongo>=4.0
+streamlit>=1.32
