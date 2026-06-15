@@ -1,0 +1,19 @@
+# Environnement Python
+venv_if29/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+*_executed.ipynb
+
+# Données volumineuses / non livrables
+raw/
+users_aggregated.json
+users_ml_ready.csv
+*.pdf
+
+# Fichiers locaux / doublons (racine uniquement)
+EDA.ipynb
+/import_json.sh
+/import_local.sh
+.DS_Store
+*.swp
