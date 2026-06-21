@@ -62,10 +62,10 @@ Document associé au livrable **L4** du projet IF29.
 
 **Tâches réalisées :**
 - Implémentation K-Means (MiniBatchKMeans, k=7) et Isolation Forest
-- Choix des hyperparamètres (coude d'inertie, contamination 5 %)
+- Choix des hyperparamètres (coude d'inertie, contamination auto)
 - ACP 7 composantes et évaluation vs labels manuels
 - Visualisation et interprétation des clusters
-- Retenu : **Isolation Forest** (~32 141 profils, 5 %)
+- Retenu : **Isolation Forest** (~42 987 profils, 6,68 %)
 
 **Livrables :** `Groupe3_profils_atypiques_non_Sup.ipynb`
 

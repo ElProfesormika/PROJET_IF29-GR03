@@ -1,9 +1,22 @@
-"""Constantes et métriques du projet IF29 — Groupe 3."""
+"""Constantes et métriques du projet IF29 — Groupe 3 (aucun import demo.*)."""
 
-from pathlib import Path
+# 21 colonnes MongoDB → 16 features ML (après EDA)
+VARIABLES_AGGREGATED_COUNT = 21
+FEATURES_ML_COUNT = 16
 
-ROOT = Path(__file__).resolve().parent.parent
-DATA_FILE = ROOT / "users_labeled_manual.csv"
+VARIABLES_AGGREGATED_21 = [
+    "user_id", "screen_name", "verified", "profile_lang", "default_profile_image",
+    "followers_count", "friends_count", "followers_friends_ratio",
+    "nb_tweets", "nb_retweets", "retweet_ratio",
+    "avg_tweet_length", "avg_hashtags", "avg_urls", "avg_mentions",
+    "avg_favorites", "avg_retweet_count",
+    "first_tweet_date", "last_tweet_date", "active_days", "tweet_frequency",
+]
+
+FEATURES_EXCLUDED_FROM_ML = [
+    "user_id", "screen_name", "profile_lang",
+    "first_tweet_date", "last_tweet_date",
+]
 
 PROJECT = {
     "title": "Détection de profils atypiques sur X (Twitter)",
@@ -41,11 +54,11 @@ NOTEBOOKS = [
         "file": "Groupe3_Analyse_Exploratoire.ipynb",
         "title": "Analyse exploratoire",
         "tag": "EDA",
-        "summary": "Distributions, corrélations, choix ACP à 7 composantes (seuil 75 %).",
+        "summary": "Distributions, corrélations, réduction 21 → 16 variables pour le ML.",
         "highlights": [
-            "643 124 profils, distributions asymétriques",
-            "log1p pour visualisation uniquement",
-            "ACP retenue : 7 composantes (~79 % variance)",
+            "643 124 profils — source : users_aggregated.csv (sans labels)",
+            "21 variables agrégées → 16 features ML retenues après EDA",
+            "Corrélations en % · describe sur le jeu complet",
         ],
     },
     {
@@ -67,8 +80,8 @@ NOTEBOOKS = [
         "tag": "UNSUP",
         "summary": "K-Means vs Isolation Forest sur 16 features + ACP 7 composantes.",
         "highlights": [
-            "K-Means k=7 : ~3 500 profils (0,54 %)",
-            "Isolation Forest 5 % : ~32 141 profils",
+            "K-Means k=7 : ~3 498 profils (0,54 %)",
+            "Isolation Forest (auto) : ~42 987 profils",
             "Retenu : Isolation Forest",
         ],
     },
@@ -91,9 +104,9 @@ NOTEBOOKS = [
         "tag": "FIN",
         "summary": "Comparaison des approches retenues et recommandations.",
         "highlights": [
-            "Isolation Forest pour l'exploration",
-            "XGBoost avec features hors règles",
-            "Deux approches complémentaires",
+            "Isolation Forest (contamination auto) : ~42 987 profils",
+            "XGBoost F1 = 0,443 · ROC-AUC = 0,794",
+            "Rapport L1 : docs/RAPPORT_PROJET.md",
         ],
     },
 ]
@@ -127,11 +140,11 @@ FEATURES_ML = {
 }
 
 RESULTS_UNSUPERVISED = {
-    "K-Means": {"count": 3_500, "pct": 0.54},
-    "Isolation Forest": {"count": 32_141, "pct": 5.00},
+    "K-Means": {"count": 3_498, "pct": 0.54},
+    "Isolation Forest": {"count": 42_987, "pct": 6.68},
     "Consensus": {"count": 3_498, "pct": 0.54},
-    "Iso Forest seul": {"count": 28_643, "pct": 4.45},
-    "K-Means seul": {"count": 2, "pct": 0.00},
+    "Iso Forest seul": {"count": 39_489, "pct": 6.14},
+    "K-Means seul": {"count": 0, "pct": 0.00},
 }
 
 RESULTS_SUPERVISED = {
@@ -145,10 +158,33 @@ RESULTS_SUPERVISED = {
     },
 }
 
-# Matrices dérivées des métriques (jeu test 20 %, 128 625 profils)
+# Matrices de confusion (jeu complet 643 124 profils sauf SVM/XGB = test 20 %)
 CM_SVM = [[55_875, 51_012], [5_717, 16_021]]
 CM_XGB = [[68_824, 38_063], [4_717, 17_021]]
-CM_KM_VS_IF = [[610_981, 28_643], [2, 3_498]]
+CM_KM_VS_IF = [[600_137, 39_489], [0, 3_498]]
+CM_KM_VS_LABELS = [[530_995, 3_204], [108_631, 294]]
+CM_IF_VS_LABELS = [[500_466, 33_733], [99_671, 9_254]]
+
+
+def cm_to_metrics(cm):
+    """Métriques binaires depuis une matrice [[TN, FP], [FN, TP]]."""
+    tn, fp = cm[0]
+    fn, tp = cm[1]
+    total = tn + fp + fn + tp
+    precision = tp / (tp + fp) if (tp + fp) else 0.0
+    recall = tp / (tp + fn) if (tp + fn) else 0.0
+    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) else 0.0
+    accuracy = (tn + tp) / total if total else 0.0
+    return {
+        "Precision": round(precision, 3),
+        "Recall": round(recall, 3),
+        "F1": round(f1, 3),
+        "Accuracy": round(accuracy, 3),
+    }
+
+
+IF_VS_LABELS_METRICS = cm_to_metrics(CM_IF_VS_LABELS)
+KM_VS_LABELS_METRICS = cm_to_metrics(CM_KM_VS_LABELS)
 
 XGB_PC_IMPORTANCE = {
     "PC1": 0.28, "PC2": 0.22, "PC3": 0.18, "PC4": 0.16, "PC5": 0.16,
@@ -159,10 +195,10 @@ XGB_PC_VARIANCE = {
 
 PIPELINE_STEPS = [
     ("Tweet_Worldcup", "581 fichiers JSONL · ~1,16 M tweets"),
-    ("MongoDB", "Import + collection tweets"),
-    ("Agrégation", "users_aggregated.csv · 643 124 profils"),
-    ("Labellisation Excel", "users_labeled_manual.csv"),
-    ("ML", "StandardScaler → ACP → modèles"),
+    ("MongoDB + Agrégation", "→ `users_aggregated.csv` · 643 124 profils · **21 variables** · sans label"),
+    ("Analyse exploratoire", "Sur `users_aggregated.csv` · describe · corrélations % · **21 → 16 features**"),
+    ("Labellisation Excel", "→ `users_labeled_manual.csv` · + `label` · + `anomaly_score`"),
+    ("Modélisation ML", "`users_labeled_manual.csv` · StandardScaler → ACP → modèles"),
 ]
 
 THEME = {
@@ -179,6 +215,3 @@ THEME = {
     "success": "#2E7D32",
     "warning": "#EF6C00",
 }
-
-# Réexport pour compatibilité
-from demo.team import ML_DIMENSIONS, TEAM_MEMBERS  # noqa: F401, E402

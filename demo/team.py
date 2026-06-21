@@ -52,10 +52,10 @@ TEAM_MEMBERS = [
         "deliverables": ["Groupe3_profils_atypiques_non_Sup.ipynb"],
         "tasks": [
             "Implémentation K-Means (MiniBatchKMeans, k=7) et Isolation Forest",
-            "Choix hyperparamètres et justification (coude, contamination 5 %)",
+            "Choix hyperparamètres et justification (coude, contamination auto)",
             "ACP 7 composantes, évaluation vs labels manuels",
             "Visualisation clusters et comparaison des méthodes",
-            "Retenu : Isolation Forest (~32 141 profils, 5 %)",
+            "Retenu : Isolation Forest (~42 987 profils, 6,68 %)",
         ],
     },
     {
@@ -81,6 +81,7 @@ TEAM_MEMBERS = [
         "soutenance": "Synthèse, limites, recommandations et conclusion",
         "deliverables": [
             "Groupe3_profils_atypiques_Final.ipynb",
+            "docs/RAPPORT_PROJET.md",
             "docs/PROMPT_SOUTENANCE_CLAUDE.md",
             "demo/app.py",
             "docs/EQUIPE_ROLES.md",
@@ -90,7 +91,7 @@ TEAM_MEMBERS = [
             "Validation des choix techniques et des hypothèses",
             "Comparaison supervisée vs non supervisée",
             "Identification limites, biais et risques de labellisation",
-            "Rédaction rapport (L4), portail démo et préparation soutenance",
+            "Rédaction rapport L1, portail démo et préparation soutenance",
         ],
     },
 ]

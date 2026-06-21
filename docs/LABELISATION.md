@@ -6,11 +6,11 @@ Document associé au projet IF29 — *Comparaison de deux méthodes de classific
 
 ## 1. Contexte
 
-Le pipeline MongoDB (Étape 1) produit `users_aggregated.csv` : 643 124 profils, 21 variables, **sans label**. Ce fichier est exploitable en non supervisé, mais le modèle supervisé (SVM / XGBoost) nécessite une variable cible.
+Le pipeline MongoDB (Étape 1) produit `users_aggregated.csv` : 643 124 profils, **21 variables**, **sans label**.
 
-Une **labellisation manuelle** a été réalisée par l'équipe pour enrichir le jeu de données et produire `users_labeled_manual.csv`.
+L'**analyse exploratoire** (`Groupe3_Analyse_Exploratoire.ipynb`) s'appuie sur ce fichier et conduit à retenir **16 features numériques** pour le ML (exclusion des identifiants, de `profile_lang` et des dates brutes).
 
-Conformément au sujet IF29, les labels ont été **définis et validés manuellement** à partir de l'analyse exploratoire (`Groupe3_Analyse_Exploratoire.ipynb`) et de la littérature sur les bots Twitter (Ferrara et al., 2016 ; Chu et al., 2012 ; Varol et al., 2017).
+La **labellisation Excel** intervient **après** l'EDA pour produire `users_labeled_manual.csv`.
 
 > **Important :** la labellisation a été effectuée **uniquement sous Microsoft Excel** (filtres, tri, inspection visuelle). Aucun script Python n'a été utilisé pour générer les labels.
 
@@ -19,8 +19,8 @@ Conformément au sujet IF29, les labels ont été **définis et validés manuell
 ## 2. Relation entre les fichiers
 
 ```
-users_aggregated.csv  ->  labellisation Excel  ->  users_labeled_manual.csv
-     (sans label)            (manuel)               (+ label, + anomaly_score)
+users_aggregated.csv (21 col.)  ->  EDA  ->  labellisation Excel  ->  users_labeled_manual.csv
+     (sans label)                         (manuel)                    (+ label, + anomaly_score)
 ```
 
 **`users_labeled_manual.csv`** est le **même fichier** que `users_aggregated.csv`, enrichi de deux colonnes après labellisation. Les 643 124 profils et les 21 variables d'origine sont identiques.

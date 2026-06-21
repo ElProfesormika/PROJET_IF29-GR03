@@ -12,9 +12,11 @@ from sklearn.decomposition import PCA
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
 
-from demo.config import (
+from demo.constants import (
     ANOMALY_SCORE_DIST,
+    CM_IF_VS_LABELS,
     CM_KM_VS_IF,
+    CM_KM_VS_LABELS,
     CM_SVM,
     CM_XGB,
     FEATURES_16,
@@ -156,14 +158,30 @@ def fig_boxplots(df: pd.DataFrame, columns: list[str]):
     return fig
 
 
-def fig_correlation_heatmap(df: pd.DataFrame, columns: list[str]):
+def correlation_matrix_pct(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
+    cols = [c for c in columns if c in df.columns]
+    return (df[cols].corr() * 100).round(1)
+
+
+def fig_correlation_heatmap(df: pd.DataFrame, columns: list[str], as_percent: bool = True):
     setup_style()
     cols = [c for c in columns if c in df.columns]
     corr = df[cols].corr()
+    display = corr * 100 if as_percent else corr
+    vmin, vmax = (-100, 100) if as_percent else (-1, 1)
+
     fig, ax = plt.subplots(figsize=(12, 10))
-    sns.heatmap(corr, annot=False, cmap="RdBu_r", center=0, ax=ax,
-                linewidths=0.4, cbar_kws={"shrink": 0.8})
-    _title(ax, "Matrice de corrélation entre les variables")
+    annot = np.array([[f"{display.iloc[i, j]:.0f}%" for j in range(len(cols))] for i in range(len(cols))])
+    sns.heatmap(
+        display, annot=annot, fmt="", cmap="RdBu_r", center=0,
+        vmin=vmin, vmax=vmax, ax=ax, linewidths=0.4,
+        cbar_kws={"shrink": 0.8, "label": "Corrélation (%)" if as_percent else "Corrélation"},
+        annot_kws={"size": 7},
+    )
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right", fontsize=8)
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=8)
+    title = "Matrice de corrélation (%) — 16 features ML" if as_percent else "Matrice de corrélation"
+    _title(ax, title)
     fig.tight_layout()
     return fig
 
@@ -280,7 +298,7 @@ def fig_isolation_forest_bar():
     colors = [C["normal"], C["atypical"]]
     fig, ax = plt.subplots(figsize=(7, 4.5))
     bars = ax.bar(labels, values, color=colors, edgecolor=C["border"], width=0.5)
-    _title(ax, "Isolation Forest — Détection (contamination = 5 %)")
+    _title(ax, "Isolation Forest — Détection (contamination = auto)")
     ax.set_ylabel("Nombre de profils")
     for bar in bars:
         h = bar.get_height()
@@ -427,55 +445,95 @@ def fig_acp_comparison():
 
 
 def fig_synthesis_final():
+    """Comparaison des deux modèles retenus — objectif du projet."""
     setup_style()
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
-    categories = ["K-Means\nseulement", "Consensus", "Iso Forest\nseulement"]
-    values_ns = [
-        RESULTS_UNSUPERVISED["K-Means seul"]["count"],
-        RESULTS_UNSUPERVISED["Consensus"]["count"],
-        RESULTS_UNSUPERVISED["Iso Forest seul"]["count"],
-    ]
-    colors_ns = [C["primary"], C["accent"], C["atypical"]]
-    axes[0].bar(categories, values_ns, color=colors_ns, edgecolor=C["border"])
-    _title(axes[0], "Non supervisé — détections (Isolation Forest retenu)")
-    axes[0].set_ylabel("Nombre de profils")
-    for i, v in enumerate(values_ns):
-        if v > 0:
-            axes[0].text(i, v + 400, f"{v:,}".replace(",", " "), ha="center", fontweight="bold")
+    # Isolation Forest — modèle non supervisé retenu
+    if_metrics = ["Profils détectés", "Part du jeu"]
+    if_values = [RESULTS_UNSUPERVISED["Isolation Forest"]["count"],
+                 RESULTS_UNSUPERVISED["Isolation Forest"]["pct"]]
+    bars_if = axes[0].bar(if_metrics, if_values, color=[C["accent"], C["primary"]],
+                            edgecolor=C["border"], width=0.45)
+    _title(axes[0], "Isolation Forest (retenu) — sans labels")
+    axes[0].set_ylabel("Valeur")
+    axes[0].text(0, if_values[0] + 800,
+                 f"{int(if_values[0]):,}".replace(",", " ") + " profils",
+                 ha="center", fontweight="bold")
+    axes[0].text(1, if_values[1] + 0.15, f"{if_values[1]:.2f} %", ha="center", fontweight="bold")
+    axes[0].set_ylim(0, max(if_values) * 1.2)
 
-    models = ["SVM", "XGBoost"]
-    f1_scores = [RESULTS_SUPERVISED["SVM"]["F1"], RESULTS_SUPERVISED["XGBoost"]["F1"]]
-    bars = axes[1].bar(models, f1_scores, color=[C["primary"], C["success"]],
-                       edgecolor=C["border"], width=0.45)
-    _title(axes[1], "Supervisé — F1 (ACP 5 comp., 8 feat.)")
-    axes[1].set_ylabel("F1-score")
+    # XGBoost — modèle supervisé retenu
+    xgb_metrics = ["F1", "ROC-AUC"]
+    xgb_values = [RESULTS_SUPERVISED["XGBoost"]["F1"], RESULTS_SUPERVISED["XGBoost"]["ROC-AUC"]]
+    bars_xgb = axes[1].bar(xgb_metrics, xgb_values, color=[C["success"], C["primary"]],
+                             edgecolor=C["border"], width=0.45)
+    _title(axes[1], "XGBoost (retenu) — avec labels")
+    axes[1].set_ylabel("Score")
     axes[1].set_ylim(0, 1.05)
-    for bar, val in zip(bars, f1_scores):
+    for bar, val in zip(bars_xgb, xgb_values):
         axes[1].text(bar.get_x() + bar.get_width() / 2, val + 0.02, f"{val:.3f}",
                      ha="center", fontweight="bold")
+
+    fig.tight_layout()
+    return fig
+
+
+def fig_retained_models_overview():
+    """Vue d'ensemble IF vs XGBoost — les deux approches retenues."""
+    setup_style()
+    fig, ax = plt.subplots(figsize=(10, 5))
+    models = ["Isolation Forest\n(non supervisé)", "XGBoost\n(supervisé)"]
+    x = np.arange(len(models))
+    width = 0.35
+
+    detection = [RESULTS_UNSUPERVISED["Isolation Forest"]["pct"], RESULTS_SUPERVISED["XGBoost"]["F1"] * 100]
+    bars1 = ax.bar(x - width / 2, detection, width, label="IF : % détectés · XGB : F1×100",
+                     color=C["accent"], edgecolor=C["border"])
+    auc_line = [0, RESULTS_SUPERVISED["XGBoost"]["ROC-AUC"]]
+    bars2 = ax.bar(x + width / 2, [0, auc_line[1]], width, label="ROC-AUC (XGBoost)",
+                     color=C["success"], edgecolor=C["border"])
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(models)
+    ax.set_ylabel("Score normalisé")
+    ax.set_ylim(0, 1.05)
+    _title(ax, "Modèles retenus — comparaison des deux approches")
+    ax.legend(fontsize=8)
+    ax.text(0, detection[0] + 1, f"{detection[0]:.2f} %", ha="center", fontweight="bold", fontsize=9)
+    ax.text(1 - width / 2, detection[1] + 2, f"F1={RESULTS_SUPERVISED['XGBoost']['F1']:.3f}",
+            ha="center", fontweight="bold", fontsize=9)
+    ax.text(1 + width / 2, auc_line[1] + 0.02, f"{auc_line[1]:.3f}", ha="center", fontweight="bold", fontsize=9)
     fig.tight_layout()
     return fig
 
 
 def fig_pipeline_flow():
     setup_style()
-    fig, ax = plt.subplots(figsize=(14, 2.8))
+    fig, ax = plt.subplots(figsize=(14, 3.8))
     ax.set_xlim(0, 10)
     ax.set_ylim(0, 1)
     ax.axis("off")
-    steps = ["JSONL\nraw/", "MongoDB", "Agrégation", "Excel\nLabels", "StandardScaler", "ACP", "Modèles"]
-    xs = np.linspace(0.6, 9.4, len(steps))
-    for i, (x, label) in enumerate(zip(xs, steps)):
-        rect = mpatches.FancyBboxPatch((x - 0.55, 0.25), 1.1, 0.5, boxstyle="round,pad=0.04",
-                                       facecolor=C["primary"] if i < 4 else C["accent"],
-                                       edgecolor=C["border"], alpha=0.9)
+    steps = [
+        "JSONL\nraw/", "MongoDB\nAgrégation",
+        "users_\naggregated\n(21 var.)",
+        "EDA\n21→16 feat.",
+        "Labellisation\nExcel",
+        "users_\nlabeled\n(+ labels)",
+        "ML",
+    ]
+    xs = np.linspace(0.4, 9.6, len(steps))
+    colors = [C["primary_dark"], C["primary_dark"], C["primary"],
+              C["primary"], C["accent"], C["accent"], C["accent"]]
+    for i, (x, label, color) in enumerate(zip(xs, steps, colors)):
+        rect = mpatches.FancyBboxPatch((x - 0.58, 0.18), 1.16, 0.64, boxstyle="round,pad=0.04",
+                                       facecolor=color, edgecolor=C["border"], alpha=0.92)
         ax.add_patch(rect)
-        ax.text(x, 0.5, label, ha="center", va="center", color="white", fontsize=8, fontweight="bold")
+        ax.text(x, 0.5, label, ha="center", va="center", color="white", fontsize=7, fontweight="bold")
         if i < len(steps) - 1:
-            ax.annotate("", xy=(xs[i + 1] - 0.58, 0.5), xytext=(x + 0.58, 0.5),
+            ax.annotate("", xy=(xs[i + 1] - 0.6, 0.5), xytext=(x + 0.6, 0.5),
                         arrowprops=dict(arrowstyle="->", color=C["muted"], lw=1.5))
-    _title(ax, "Pipeline complet — de la donnée brute aux modèles")
+    _title(ax, "Pipeline — aggregated (EDA) → labeled (ML)")
     fig.tight_layout()
     return fig
 
@@ -500,8 +558,8 @@ def fig_acp_supervised_variance(var_cum: np.ndarray, n_retained: int):
 
 def fig_kmeans_vs_labels():
     return fig_heatmap_cm(
-        [[106_000, 22_000], [3_000, 17_000]],
-        "K-Means vs labels manuels (échantillon projet)",
+        CM_KM_VS_LABELS,
+        "K-Means vs labels manuels (643 124 profils)",
         "Prédiction", "Réalité",
         ["Normal", "Atypique"], ["Normal", "Atypique"],
     )
@@ -509,8 +567,8 @@ def fig_kmeans_vs_labels():
 
 def fig_isoforest_vs_labels():
     return fig_heatmap_cm(
-        [[95_000, 12_000], [8_000, 13_000]],
-        "Isolation Forest vs labels manuels (échantillon projet)",
+        CM_IF_VS_LABELS,
+        "Isolation Forest vs labels manuels (643 124 profils · contamination auto)",
         "Prédiction", "Réalité",
         ["Normal", "Atypique"], ["Normal", "Atypique"],
     )
@@ -576,7 +634,7 @@ def compute_isolation_forest_sample(df: pd.DataFrame):
             X[c] = X[c].astype(int)
     Xs = StandardScaler().fit_transform(X)
     Xp = PCA(n_components=7, random_state=42).fit_transform(Xs)
-    iso = IsolationForest(contamination=0.05, random_state=42, n_jobs=-1)
+    iso = IsolationForest(contamination='auto', random_state=42, n_jobs=-1)
     pred = iso.fit_predict(Xp)
     n_anom = (pred == -1).sum()
     return n_anom, len(df) - n_anom

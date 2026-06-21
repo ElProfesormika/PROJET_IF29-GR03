@@ -2,9 +2,10 @@
 
 INTERP = {
     "pipeline_flow": (
-        "Chaque étape transforme les tweets bruts en profils agrégés labellisés, "
-        "puis en entrées normalisées pour les modèles. Le pipeline est identique "
-        "dans les deux approches jusqu'à l'étape ACP."
+        "1) Agrégation MongoDB → users_aggregated.csv (21 variables, sans label). "
+        "2) EDA sur ce fichier → justification de 16 features ML. "
+        "3) Labellisation Excel → users_labeled_manual.csv (+ label, + anomaly_score). "
+        "4) Modélisation ML sur le fichier labellisé."
     ),
     "acp_comparison": (
         "Le non supervisé retient 7 composantes (seuil 75 % sur 16 features). "
@@ -12,8 +13,15 @@ INTERP = {
         "Le k=7 de K-Means est un choix de clusters indépendant."
     ),
     "synthesis_final": (
-        "Isolation Forest détecte largement plus de profils que K-Means (~5 % vs 0,54 %). "
-        "XGBoost surpasse le SVM en F1 (0,443 vs 0,361) sur les features hors règles Excel."
+        "Conclusion globale : sur 643 124 profils, Isolation Forest (contamination auto, ~6,7 % détectés, sans labels) "
+        "et XGBoost (F1 = 0,443, AUC = 0,794, avec labels) sont complémentaires — "
+        "exploration d'abord, classification ensuite. La comparaison rigoureuse et le traitement "
+        "de la circularité constituent la contribution principale du projet."
+    ),
+    "retained_models": (
+        "Isolation Forest explore ~6,7 % de profils déviants sans annotation (seuil auto). "
+        "XGBoost classifie avec les labels Excel (F1 = 0,443, AUC = 0,794). "
+        "Les deux répondent à la problématique par des angles différents."
     ),
     "label_distribution": (
         "Environ 17 % des profils sont atypiques selon la labellisation Excel. "
@@ -23,6 +31,11 @@ INTERP = {
     "missing_values": (
         "Peu ou pas de valeurs manquantes : le jeu de données agrégé MongoDB "
         "est exploitable directement sans imputation."
+    ),
+    "describe_aggregated": (
+        "Statistiques calculées sur l'intégralité des 643 124 profils "
+        "(users_aggregated.csv), avant labellisation. "
+        "Les distributions asymétriques (médiane << moyenne) confirment la présence de profils extrêmes."
     ),
     "distributions_grid": (
         "Les variables sont fortement asymétriques (queues longues). "
@@ -37,8 +50,14 @@ INTERP = {
         "sur followers, friends et métriques d'activité."
     ),
     "correlation": (
-        "Certaines variables sont corrélées (ex. nb_tweets / retweet_ratio). "
-        "L'ACP réduit cette redondance avant la modélisation."
+        "Corrélations exprimées en pourcentage (coefficient × 100). "
+        "Certaines variables sont fortement liées (ex. nb_tweets / retweet_ratio) : "
+        "l'ACP réduira cette redondance en modélisation."
+    ),
+    "features_reduced": (
+        "users_aggregated.csv : 21 colonnes MongoDB. L'EDA en exclut 5 "
+        "(identifiants, langue, dates brutes) → 16 features ML. "
+        "La labellisation Excel produit ensuite users_labeled_manual.csv."
     ),
     "normal_vs_atypical": (
         "Les profils atypiques se distinguent sur retweet_ratio, avg_urls et avg_mentions, "
@@ -65,13 +84,13 @@ INTERP = {
         "Les clusters minoritaires (< 1 % des profils) sont interprétés comme atypiques."
     ),
     "isolation_forest_bar": (
-        "Avec contamination = 5 %, Isolation Forest isole ~32 141 profils "
-        "sans utiliser les labels — adapté à l'exploration initiale."
+        "Avec contamination = auto, Isolation Forest isole ~42 987 profils "
+        "sans utiliser les labels — le seuil est déterminé par les scores d'anomalie."
     ),
     "unsupervised_comparison": (
         "K-Means et Isolation Forest ne détectent pas les mêmes profils. "
         "Le consensus (~3 498) forme un noyau d'anomalies robuste ; "
-        "Isolation Forest étend la détection à ~28 643 profils supplémentaires."
+        "Isolation Forest étend la détection à ~39 489 profils supplémentaires."
     ),
     "cm_km_vs_if": (
         "Peu de profils sont flaggés atypiques par K-Means seul. "
@@ -84,7 +103,7 @@ INTERP = {
     ),
     "cm_if_vs_labels": (
         "Isolation Forest améliore le rappel mais génère plus de faux positifs "
-        "que K-Means, cohérent avec un taux de contamination fixé à 5 %."
+        "que K-Means, cohérent avec contamination = auto (~6,7 % détectés)."
     ),
     "acp_supervised": (
         "Avec seulement 8 features, 5 composantes suffisent à capturer 100 % de la variance. "

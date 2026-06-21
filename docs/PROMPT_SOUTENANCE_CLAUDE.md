@@ -1,11 +1,14 @@
 # Prompt Claude — Slides de soutenance IF29 Groupe 3
 
-> **Comment utiliser ce fichier**
-> 1. Ouvrir Claude (claude.ai ou l'application).
+> **Comment obtenir un PowerPoint (.pptx)**
+> 1. Ouvrir Claude (claude.ai) — de préférence avec **création de documents / artefacts**.
 > 2. Copier **tout le bloc « PROMPT À COLLER DANS CLAUDE »** (section 2) dans une nouvelle conversation.
-> 3. Les champs durée/style restent à ajuster si besoin (noms et rôles déjà renseignés).
-> 4. Demander ensuite à Claude : *« Génère les slides au format Markdown, une slide par section `---` »* ou *« Exporte en structure PowerPoint slide par slide »*.
-> 5. Optionnel : demander une version **10 min** ou **15 min** en précisant la durée.
+> 3. Demander : *« Génère la présentation complète slide par slide »*.
+> 4. Puis coller le prompt **« Export PowerPoint (.pptx) »** (section 3) pour obtenir le fichier ou la structure prête à exporter.
+> 5. Alternative : demander *« Génère les slides au format Markdown avec `---` entre chaque slide »*, puis copier dans Google Slides / PowerPoint, ou utiliser un convertisseur Markdown → PPTX.
+> 6. Graphiques : capturer depuis le portail `demo/app.py` (`bash scripts/run_demo.sh`) ou les notebooks (section 6).
+>
+> **Chiffres à jour (juin 2026)** : Isolation Forest `contamination = 'auto'` → **42 987 profils (6,68 %)** · XGBoost F1 = **0,443** · AUC = **0,794**
 
 ---
 
@@ -17,8 +20,10 @@
 | **Équipe** | Groupe 3 — 5 membres (voir `docs/EQUIPE_ROLES.md`) |
 | **Sujet** | Détection de profils atypiques sur X (Twitter) |
 | **Volume** | 643 124 profils · ~1,16 M tweets (Tweet_Worldcup) |
-| **Approche 1** | Non supervisée : K-Means vs Isolation Forest → **Isolation Forest** |
+| **Approche 1** | Non supervisée : K-Means vs Isolation Forest (`contamination = auto`) → **Isolation Forest** |
 | **Approche 2** | Supervisée : SVM vs XGBoost → **XGBoost** |
+| **IF détectés** | 42 987 profils (6,68 %) · consensus KM∩IF : 3 498 |
+| **Rapport L1** | `docs/RAPPORT_PROJET.md` |
 | **Dépôt GitHub** | https://github.com/ElProfesormika/PROJET_IF29-GR03 |
 
 ---
@@ -78,7 +83,7 @@ Génère une présentation de soutenance ORALE, claire, professionnelle et struc
 - Paramètres d'entrée : EDA, 16 features, corrélations, labellisation, `Groupe3_Analyse_Exploratoire.ipynb`
 
 **Membre 3 — Samella LEUKOUO** (Data Scientist)
-- Métriques modèle non supervisé : K-Means k=7, Isolation Forest 5 %, ACP 7 comp., retenu IF
+- Métriques modèle non supervisé : K-Means k=7, Isolation Forest (contamination auto), ACP 7 comp., retenu IF
 
 **Membre 4 — Dorcas ADRAKE** (ML Engineer / Data Scientist)
 - Sorties supervisées : SVM vs XGBoost, ACP 5 comp., 8 features hors règles, F1 = 0,443
@@ -177,13 +182,18 @@ features → StandardScaler → ACP → modèles
 - Notebook : `Groupe3_profils_atypiques_non_Sup.ipynb`
 - **K-Means** (MiniBatchKMeans, k=7 clusters — choix par coude d'inertie) :
   - Clusters minoritaires (< 1 %) = atypiques
-  - Résultat : **~3 500 profils (0,54 %)**
-- **Isolation Forest** (contamination = 5 %) :
-  - Résultat : **~32 141 profils (5,00 %)**
+  - Résultat : **~3 498 profils (0,54 %)**
+- **Isolation Forest** (`contamination = 'auto'`) :
+  - Seuil inféré des scores d'anomalie (Liu et al., 2008) — pas de proportion fixe imposée
+  - Résultat : **~42 987 profils (6,68 %)**
+  - IF seul (hors consensus K-Means) : **~39 489 profils (6,14 %)**
 - **Méthode retenue : Isolation Forest**
   - Conçue pour la détection d'anomalies
-  - Plus sensible sur 643 000 profils
-  - Consensus K-Means + Iso Forest : ~3 498 profils
+  - Plus sensible sur 643 000 profils que K-Means (0,54 %)
+  - Consensus K-Means ∩ IF : **~3 498 profils** (noyau robuste)
+- **Évaluation a posteriori IF vs labels Excel** (643 124 profils) :
+  - Précision 0,215 · Rappel 0,085 · F1 0,122
+  - Interprétation : définitions différentes (outliers statistiques vs règles Excel)
 
 ### Approche supervisée
 - Notebook : `Groupe3_profils_atypiques_Sup.ipynb`
@@ -215,15 +225,34 @@ features → StandardScaler → ACP → modèles
 | Labels requis | Non | Oui (Excel) |
 | Features ML | 16 | 8 (hors règles) |
 | ACP | 7 composantes | 5 composantes |
-| Résultat | ~32 141 détectés (5 %) | F1 = 0,443 |
+| Résultat | ~42 987 détectés (6,68 %) | F1 = 0,443 |
 | Forces | Exploration sans annotation | Signal avec labels |
-| Faiblesses | Contamination arbitraire (5 %) | Label corrélé aux règles |
+| Faiblesses | Seuil auto (non contrôlé) | Label corrélé aux règles |
+
+### Limites et perspectives (slide obligatoire)
+- Labels Excel subjectifs, non validés par un expert externe
+- F1 supervisé modeste (0,443) : séparation difficile sans features des règles
+- Biais dataset World Cup (temporel, thématique)
+- IF `contamination = auto` : seuil non contrôlé explicitement (~6,68 % détectés)
+- Perspectives : validation experte, autres corpus, features textuelles, semi-supervisé
+
+### Slide démonstration live (OBLIGATOIRE — L3)
+- **Titre :** Démonstration — Portail Streamlit
+- Interface : `demo/app.py` · lancement `bash scripts/run_demo.sh` → http://localhost:8501
+- Parcours recommandé (5 min) :
+  1. Accueil — métriques IF (42 987) et XGBoost (F1/AUC)
+  2. Pipeline & Données — agrégation → EDA → labellisation
+  3. Non supervisé — K-Means vs IF (`contamination auto`)
+  4. Supervisé — SVM vs XGBoost + circularité
+  5. Synthèse — IF vs XGBoost complémentaires
+- **→ Démonstration live** (intervenant : Ace ANALLA)
 
 ### Conclusion et recommandations
-1. **Isolation Forest** → phase d'**exploration** sans labels (détecte ~5 % de profils déviants)
+1. **Isolation Forest** → phase d'**exploration** sans labels (détecte ~6,7 % de profils déviants)
 2. **XGBoost** → une fois les labels définis, **sans réutiliser** les variables des règles Excel
 3. Les deux approches sont **complémentaires**, pas concurrentes
 4. Perspectives : validation terrain, autres jeux de données, deep learning, détection temps réel
+5. Livrables : notebooks · `docs/RAPPORT_PROJET.md` (L1) · `docs/EQUIPE_ROLES.md` (L4) · portail web
 
 ### Slide de clôture
 - Synthèse en 3 phrases
@@ -241,14 +270,15 @@ features → StandardScaler → ACP → modèles
 5. Tableau comparatif SVM vs XGBoost
 6. Slide « circularité » (limite + correction)
 7. Slide conclusion avec recommandation pratique
-8. Slide « Questions » avec noms des 5 membres
+8. **Slide démonstration live Streamlit**
+9. Slide « Questions » avec noms des 5 membres
 
 ---
 
 ## QUESTIONS PROBABLES DU JURY (préparer 1 slide « annexe » ou notes)
 
 1. **Pourquoi Isolation Forest plutôt que K-Means ?**
-   → K-Means cherche des groupes compacts ; Isolation Forest isole les points « faciles à séparer » = anomalies. Sur 643k profils, IF détecte 5 % vs 0,54 % pour K-Means.
+   → K-Means cherche des groupes compacts ; Isolation Forest isole les points « faciles à séparer » = anomalies. Sur 643k profils, IF détecte 6,68 % vs 0,54 % pour K-Means.
 
 2. **Pourquoi 7 composantes ACP en non supervisé et 5 en supervisé ?**
    → 16 features → seuil 75 % variance = 7 comp. · 8 features → saturation à 100 % dès 5 comp. Ce sont des contextes différents.
@@ -284,7 +314,35 @@ Graphiques à mentionner dans les slides :
 
 ---
 
-## 3. Prompts de suivi (après la première génération)
+## 3. Export PowerPoint (.pptx)
+
+Copier ce prompt **dans la même conversation Claude**, après génération des slides Markdown :
+
+```
+Transforme la présentation en fichier PowerPoint (.pptx) ou en structure exportable slide par slide.
+
+Pour CHAQUE slide, fournis :
+1. **Numéro et titre** (police titre : 28 pt, bleu marine #0D47A1)
+2. **Corps** — puces courtes (max 5, police 18 pt)
+3. **Tableau ou graphique** — description précise du visuel (couleurs : bleu #1565C0, teal #00838F, rouge atypique #C62828)
+4. **Notes orateur** (zone notes PowerPoint, 2-3 phrases)
+5. **Footer** : « IF29 — Groupe 3 »
+
+Contraintes mise en page :
+- Fond blanc ou dégradé bleu marine discret
+- Pas d'emojis
+- Slides données : tableaux lisibles, chiffres en gras
+- Slide IF : barre Normal vs Atypique (610 137 normal · 42 987 atypique)
+- Slide synthèse : 2 colonnes Isolation Forest | XGBoost
+- Slide circularité : barres F1 0,970 vs 0,443
+- Dernière slide : « Merci — Questions ? » + lien GitHub
+
+Si tu peux générer le .pptx directement, crée-le. Sinon, produis un document structuré prêt pour copier-coller dans PowerPoint avec une slide par page.
+```
+
+---
+
+## 4. Prompts de suivi (après la première génération)
 
 Copier l'un de ces messages **dans la même conversation Claude** selon le besoin :
 
@@ -294,12 +352,9 @@ Raccourcis la présentation à 8 slides maximum pour une soutenance de 5 minutes
 Garde : problématique, données, labellisation, méthodo, résultats non sup., résultats sup., circularité, conclusion.
 ```
 
-### Version PowerPoint
+### Version PowerPoint (raccourci)
 ```
-Transforme chaque slide Markdown en instructions pour PowerPoint :
-- mise en page (titre, corps, footer)
-- texte exact à copier
-- description détaillée du visuel à créer
+Génère directement un fichier .pptx avec 18 slides, style académique bleu marine/teal, à partir du contenu du projet IF29 Groupe 3 ci-dessus. Inclus les tableaux de métriques et une slide démo Streamlit.
 ```
 
 ### Script oral détaillé
@@ -323,7 +378,7 @@ Simule 10 questions difficiles du jury avec des réponses courtes (30 secondes c
 
 ---
 
-## 4. Graphiques à exporter depuis les notebooks
+## 5. Graphiques à exporter
 
 | Slide suggérée | Notebook | Contenu |
 |----------------|----------|---------|
@@ -333,11 +388,12 @@ Simule 10 questions difficiles du jury avec des réponses courtes (30 secondes c
 | Détections non sup. | `Groupe3_profils_atypiques_non_Sup.ipynb` | Barres K-Means / Iso Forest |
 | SVM vs XGBoost | `Groupe3_profils_atypiques_Sup.ipynb` | Barres métriques + ROC |
 | Circularité | `Groupe3_profils_atypiques_Sup.ipynb` | Section 8 annexe |
-| Synthèse finale | `Groupe3_profils_atypiques_Final.ipynb` | 2 graphiques côte à côte |
+| Synthèse finale | `Groupe3_profils_atypiques_Final.ipynb` ou portail `demo/app.py` | 2 graphiques côte à côte |
+| Démo live | `demo/app.py` | Captures Accueil, Non sup., Supervisé, Synthèse |
 
 ---
 
-## 5. Chiffres clés à retenir (anti-piège)
+## 6. Chiffres clés à retenir (anti-piège)
 
 | Chiffre | Signification |
 |---------|---------------|
@@ -346,8 +402,10 @@ Simule 10 questions difficiles du jury avec des réponses courtes (30 secondes c
 | 7 | Composantes ACP (non supervisé) |
 | 5 | Composantes ACP (supervisé) |
 | k = 7 | Clusters K-Means (≠ 7 composantes ACP) |
-| ~3 500 | Atypiques K-Means (0,54 %) |
-| ~32 141 | Atypiques Isolation Forest (5 %) |
+| ~3 498 | Atypiques K-Means seuls (0,54 %) |
+| ~3 498 | Consensus K-Means ∩ IF (0,54 %) |
+| ~39 489 | IF seul hors consensus (6,14 %) |
+| ~42 987 | Atypiques Isolation Forest (`contamination auto`, 6,68 %) |
 | F1 = 0,443 | XGBoost (évaluation honnête) |
 | F1 ≈ 0,970 | XGBoost avec 16 features (circularité) |
 | ROC-AUC = 0,794 | XGBoost retenu |

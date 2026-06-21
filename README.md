@@ -77,14 +77,31 @@ raw/*.json  ->  MongoDB (tweets)  ->  agrégation  ->  users_aggregated.csv
 | **Contenu** | `avg_tweet_length`, `avg_hashtags`, `avg_urls`, `avg_mentions` |
 | **Engagement** | `avg_favorites`, `avg_retweet_count` *(nulles — collecte partielle)* |
 | **Temporel** | `first_tweet_date`, `last_tweet_date`, `active_days`, `tweet_frequency` |
+| **Identifiants** | `user_id`, `screen_name` |
+
+### Analyse exploratoire puis réduction des variables
+
+```
+users_aggregated.csv (21 col.)  ->  EDA  ->  16 features ML  ->  labellisation Excel
+```
+
+Après l'EDA (`users_aggregated.csv`, **sans labels**), **5 variables sont exclues** du ML :
+
+| Exclue | Raison |
+|--------|--------|
+| `user_id`, `screen_name` | Identifiants |
+| `profile_lang` | Catégorielle peu informative |
+| `first_tweet_date`, `last_tweet_date` | Redondantes avec `active_days` / `tweet_frequency` |
+
+**16 features** retenues pour la modélisation non supervisée.
 
 ---
 
 ## Jeu de données ML
 
 ```
-users_aggregated.csv       ->  labellisation Excel  ->  users_labeled_manual.csv
-     (sans label)                  (manuel)              (+ label, + anomaly_score)
+users_aggregated.csv  ->  EDA (21 -> 16 feat.)  ->  labellisation Excel  ->  users_labeled_manual.csv
+     (sans label)                                        (manuel)              (+ label, + anomaly_score)
 ```
 
 | Approche | Fichier | Labels en entrée |
@@ -101,6 +118,7 @@ IF29/
 ├── README.md
 ├── README_data.md
 ├── requirements.txt
+├── docs/RAPPORT_PROJET.md
 ├── docs/LABELISATION.md
 ├── docs/EQUIPE_ROLES.md
 ├── docs/PROMPT_SOUTENANCE_CLAUDE.md
@@ -173,12 +191,12 @@ Détails : [`docs/LABELISATION.md`](docs/LABELISATION.md)
 
 ## Résultats
 
-### Non supervisé — Isolation Forest retenu
+### Non supervisé — Isolation Forest retenu (`contamination = 'auto'`)
 
 | Méthode | Atypiques | % |
 |---------|-----------|---|
-| K-Means | ~3 500 | 0,54 % |
-| **Isolation Forest** | **~32 141** | **5,00 %** |
+| K-Means | ~3 498 | 0,54 % |
+| **Isolation Forest** | **~42 987** | **6,68 %** |
 
 ### Supervisé — XGBoost retenu (ACP 5 comp. + 8 features hors règles)
 
@@ -195,9 +213,9 @@ Détails : [`docs/LABELISATION.md`](docs/LABELISATION.md)
 
 | Livrable | Support |
 |----------|---------|
-| L1 Rapport | Notebooks + `docs/LABELISATION.md` |
+| L1 Rapport | [`docs/RAPPORT_PROJET.md`](docs/RAPPORT_PROJET.md) + Notebooks + [`docs/LABELISATION.md`](docs/LABELISATION.md) |
 | L2 Code | Ce dépôt + README |
-| L3 Soutenance | `Groupe3_profils_atypiques_Final.ipynb` |
+| L3 Soutenance | `Groupe3_profils_atypiques_Final.ipynb` · [`docs/PROMPT_SOUTENANCE_CLAUDE.md`](docs/PROMPT_SOUTENANCE_CLAUDE.md) (slides PPTX) · portail `demo/app.py` |
 | L4 Rôles | [`docs/EQUIPE_ROLES.md`](docs/EQUIPE_ROLES.md) |
 
 ---

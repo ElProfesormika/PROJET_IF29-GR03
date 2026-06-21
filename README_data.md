@@ -10,6 +10,8 @@ Documentation complémentaire : [`README.md`](README.md) · [`docs/LABELISATION.
 |---------|--------|----------|-------------|
 | `users_aggregated.csv` | 643 124 | 21 | Profils agrégés MongoDB, sans label |
 | `users_labeled_manual.csv` | 643 124 | 23 | Même données + `label` + `anomaly_score` |
+
+**Réduction après EDA :** 21 variables agrégées → **16 features ML** (exclusion de `user_id`, `screen_name`, `profile_lang`, `first_tweet_date`, `last_tweet_date`).
 | `raw/` | ~1,16 M tweets | — | 581 fichiers JSONL (`Tweet_Worldcup`) |
 
 ---
@@ -18,7 +20,7 @@ Documentation complémentaire : [`README.md`](README.md) · [`docs/LABELISATION.
 
 | Notebook | Rôle | Données | ACP |
 |----------|------|---------|-----|
-| `Groupe3_Analyse_Exploratoire.ipynb` | EDA | agrégé + labelisé | 7 comp. (16 feat.) |
+| `Groupe3_Analyse_Exploratoire.ipynb` | EDA | `users_aggregated.csv` (sans labels) | 7 comp. (16 feat.) |
 | `Groupe3_Labelisation.ipynb` | Doc labels | — | — |
 | `Groupe3_profils_atypiques_non_Sup.ipynb` | K-Means / Iso. Forest | labelisé | **7 comp.** |
 | `Groupe3_profils_atypiques_Sup.ipynb` | SVM / XGBoost | labelisé | **5 comp.** |
