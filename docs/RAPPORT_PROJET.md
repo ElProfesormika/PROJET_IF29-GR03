@@ -692,7 +692,7 @@ Le portail Streamlit (`demo/app.py`) centralise pour la soutenance :
 - Résultats non supervisés et supervisés ;
 - Synthèse comparative et fiches équipe (L4).
 
-Lancement : `bash scripts/run_demo.sh` → http://localhost:8501
+Lancement : `bash scripts/run_demo.sh`
 
 ---
 
