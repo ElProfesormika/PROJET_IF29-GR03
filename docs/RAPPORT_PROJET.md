@@ -113,10 +113,56 @@ Sous-questions :
 ### 3.2 Pipeline de préparation (Étape 1)
 
 ```
-raw/*.json  →  MongoDB (tweets)  →  agrégation par user_id  →  users_aggregated.csv
+raw/*.json  →  MongoDB (collection tweets)  →  scripts/aggregated.sh  →  users_aggregated (MongoDB)
+                                                                        ↓
+                                                              Export_CSV.py  →  users_aggregated.csv
 ```
 
-**Scripts :** `scripts/import_local.sh`, `Export_CSV.py`
+**Scripts :** `scripts/import_local.sh` (import JSONL) · `scripts/aggregated.sh` (agrégation) · `Export_CSV.py` (export CSV)
+
+**Hypothèse d'agrégation :** seul l'**auteur du tweet observé** (`user`) est pris en compte. Les métadonnées de `retweeted_status.user` ne sont jamais utilisées — un retweet est comptabilisé comme activité de l'auteur du retweet, pas du compte original.
+
+#### Pipeline MongoDB — `scripts/aggregated.sh`
+
+Le script exécute `db.tweets.aggregate([...])` en six étapes :
+
+| Étape | Opérateur | Rôle |
+|-------|-----------|------|
+| 1 | `$addFields` | Enrichissement **par tweet** : `is_retweet_flag` (présence de `retweeted_status`), `tweet_length` (`$strLenCP` sur `text`), comptages d'entités (`hashtags_count`, `urls_count`, `mentions_count`), conversion `created_at` → `tweet_date` |
+| 2 | `$match` | Filtrage : `user.id` existant, `tweet_date` non nulle |
+| 3 | `$group` | Agrégation par `user.id` : identité (`screen_name`, `verified`, `profile_lang`, `default_profile_image`), réseau (`followers_count`, `friends_count`), activité (`nb_tweets`, `nb_retweets`), moyennes de contenu et d'engagement, bornes temporelles, ensemble des jours actifs (`active_days_set` via `$dateToString` `%Y-%m-%d`) |
+| 4 | `$addFields` | Variables dérivées : `active_days` = taille de `active_days_set`, `retweet_ratio`, `followers_friends_ratio` (si `friends_count = 0` → ratio = `followers_count`), `tweet_frequency` = `nb_tweets / active_days` (0 si aucun jour actif) |
+| 5 | `$project` | Projection des **21 colonnes** finales (ML-ready) |
+| 6 | `$out` | Écriture dans la collection MongoDB `users_aggregated` |
+
+**Champs calculés à l'étape 1 (par tweet) :**
+
+| Champ intermédiaire | Calcul |
+|---------------------|--------|
+| `is_retweet_flag` | 1 si `retweeted_status` présent, sinon 0 |
+| `tweet_length` | Longueur Unicode de `text` (0 si absent) |
+| `hashtags_count` | `$size` de `entities.hashtags` |
+| `urls_count` | `$size` de `entities.urls` |
+| `mentions_count` | `$size` de `entities.user_mentions` |
+| `tweet_date` | `$dateFromString` sur `created_at` |
+
+**Champs agrégés à l'étape 3 (par profil) :**
+
+| Catégorie | Agrégation MongoDB |
+|-----------|-------------------|
+| Identité | `$first` sur les champs `user.*` |
+| Activité | `$sum` : `nb_tweets` (+1 par tweet), `nb_retweets` (+ `is_retweet_flag`) |
+| Contenu | `$avg` : `avg_tweet_length`, `avg_hashtags`, `avg_urls`, `avg_mentions` |
+| Engagement | `$avg` avec `$ifNull` à 0 : `avg_favorites`, `avg_retweet_count` |
+| Temporel | `$min` / `$max` : `first_tweet_date`, `last_tweet_date` ; `$addToSet` des dates journalières |
+
+**Exécution :**
+
+```bash
+bash scripts/import_local.sh    # import JSONL → collection tweets
+bash scripts/aggregated.sh      # agrégation → collection users_aggregated
+python Export_CSV.py            # export → users_aggregated.csv
+```
 
 L'agrégation produit **21 variables** par profil :
 
@@ -597,16 +643,17 @@ Portail de démonstration : `bash scripts/run_demo.sh` → http://localhost:8501
 | **KM Normal** | 600 137 | 39 489 |
 | **KM Atypique** | 0 | 3 498 |
 
-### Annexe E — Détail du pipeline MongoDB
+### Annexe E — Détail du pipeline MongoDB (`scripts/aggregated.sh`)
 
-Le script `scripts/import_local.sh` importe les 581 fichiers JSONL dans MongoDB. L'agrégation par `user_id` calcule pour chaque profil :
+**Chaîne complète :**
 
-- Comptages (`nb_tweets`, `nb_retweets`) ;
-- Moyennes (`avg_*`) sur les tweets du profil ;
-- Ratios dérivés (`retweet_ratio`, `followers_friends_ratio`, `tweet_frequency`) ;
-- Métadonnées profil (`verified`, `default_profile_image`, etc.).
+1. **`scripts/import_local.sh`** — importe les 581 fichiers JSONL (`raw/*.json`) dans la collection MongoDB `tweets` via `mongoimport`.
+2. **`scripts/aggregated.sh`** — pipeline d'agrégation (voir § 3.2) : enrichissement tweet → filtrage → `$group` par `user.id` → ratios → projection 21 colonnes → `$out: "users_aggregated"`.
+3. **`Export_CSV.py`** — exporte la collection `users_aggregated` vers `users_aggregated.csv` (643 124 lignes).
 
-L'export `Export_CSV.py` produit `users_aggregated.csv` depuis la collection MongoDB `users_aggregated`.
+**Résultat :** un profil unique par `user_id`, avec comptages (`nb_tweets`, `nb_retweets`), moyennes (`avg_*`), ratios (`retweet_ratio`, `followers_friends_ratio`, `tweet_frequency`), métadonnées profil et indicateurs temporels (`active_days` = nombre de jours distincts d'activité dans le corpus).
+
+**Point clé — `active_days` :** calculé via `$addToSet` des dates au format `%Y-%m-%d`, puis `$size` — ce n'est pas la différence calendaire entre `first_tweet_date` et `last_tweet_date`, mais le nombre réel de jours où le profil a tweeté au moins une fois.
 
 ### Annexe F — État des features supervisées exclues
 

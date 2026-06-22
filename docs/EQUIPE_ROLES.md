@@ -29,7 +29,7 @@ Document associé au livrable **L4** du projet IF29.
 - Structuration tweets / utilisateurs et agrégation par profil
 - Mise en place du stockage MongoDB et export `users_aggregated.csv`
 
-**Livrables :** `scripts/import_local.sh`, `Export_CSV.py`, `users_aggregated.csv`
+**Livrables :** `scripts/import_local.sh`, `scripts/aggregated.sh`, `Export_CSV.py`, `users_aggregated.csv`
 
 **Soutenance :** Introduction, contexte et pipeline MongoDB
 

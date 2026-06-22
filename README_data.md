@@ -12,7 +12,10 @@ Documentation complémentaire : [`README.md`](README.md) · [`docs/LABELISATION.
 | `users_labeled_manual.csv` | 643 124 | 23 | Même données + `label` + `anomaly_score` |
 
 **Réduction après EDA :** 21 variables agrégées → **16 features ML** (exclusion de `user_id`, `screen_name`, `profile_lang`, `first_tweet_date`, `last_tweet_date`).
+
 | `raw/` | ~1,16 M tweets | — | 581 fichiers JSONL (`Tweet_Worldcup`) |
+
+**Pipeline MongoDB :** `scripts/import_local.sh` → `scripts/aggregated.sh` → `Export_CSV.py` → `users_aggregated.csv` (détail : `docs/RAPPORT_PROJET.md` § 3.2).
 
 ---
 

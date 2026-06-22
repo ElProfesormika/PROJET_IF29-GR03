@@ -62,10 +62,12 @@ Avant toute modélisation ML, un **pipeline de préparation et d'agrégation** t
 
 ```bash
 bash scripts/import_local.sh
+bash scripts/aggregated.sh
+python Export_CSV.py
 ```
 
 ```
-raw/*.json  ->  MongoDB (tweets)  ->  agrégation  ->  users_aggregated.csv
+raw/*.json  ->  MongoDB (tweets)  ->  scripts/aggregated.sh  ->  users_aggregated.csv
 ```
 
 ### Variables agrégées (21 colonnes)
@@ -123,6 +125,7 @@ IF29/
 ├── docs/EQUIPE_ROLES.md
 ├── docs/PROMPT_SOUTENANCE_CLAUDE.md
 ├── scripts/import_local.sh
+├── scripts/aggregated.sh
 ├── scripts/run_demo.sh
 ├── demo/
 │   └── app.py              # Portail web de démonstration (Streamlit)

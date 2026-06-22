@@ -15,7 +15,7 @@ TEAM_MEMBERS = [
         "roles": ["Data Engineer", "Data Cleaner"],
         "ml_dimension": "Données d'entrée",
         "soutenance": "Introduction, contexte et pipeline MongoDB (données brutes → profils agrégés)",
-        "deliverables": ["scripts/import_local.sh", "Export_CSV.py", "users_aggregated.csv"],
+        "deliverables": ["scripts/import_local.sh", "scripts/aggregated.sh", "Export_CSV.py", "users_aggregated.csv"],
         "tasks": [
             "Extraction des données JSON (dataset Tweet_Worldcup)",
             "Documentation de la structure des données Twitter",

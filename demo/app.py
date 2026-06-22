@@ -16,12 +16,11 @@ import pandas as pd
 
 from demo.paths import AGGREGATED_DATA_FILE, DATA_FILE
 from demo.constants import (
-    CM_IF_VS_LABELS,
     CM_KM_VS_IF,
-    CM_KM_VS_LABELS,
     CM_SVM,
     CM_XGB,
-    cm_to_metrics,
+    IF_VS_LABELS_METRICS,
+    KM_VS_LABELS_METRICS,
     EDA_NUMERIC,
     FEATURES_16,
     FEATURES_EXCLUDED_FROM_ML,
@@ -630,10 +629,10 @@ def page_non_supervise():
             ), interp_key="cm_km_vs_if")
         with col2:
             show_fig(charts.fig_kmeans_vs_labels(), interp_key="cm_km_vs_labels")
-            m = cm_to_metrics(CM_KM_VS_LABELS)
+            m = KM_VS_LABELS_METRICS
             st.caption(f"K-Means vs labels — P={m['Precision']:.3f} · R={m['Recall']:.3f} · F1={m['F1']:.3f}")
         show_fig(charts.fig_isoforest_vs_labels(), interp_key="cm_if_vs_labels")
-        m = cm_to_metrics(CM_IF_VS_LABELS)
+        m = IF_VS_LABELS_METRICS
         st.caption(f"Isolation Forest vs labels — P={m['Precision']:.3f} · R={m['Recall']:.3f} · F1={m['F1']:.3f}")
 
 
