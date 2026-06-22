@@ -150,7 +150,7 @@ bash scripts/run_demo.sh
 # ou : streamlit run demo/app.py
 ```
 
-Ouvre **http://localhost:8501** — navigation par sections (pipeline, EDA, labellisation, ML, synthèse, notebooks).
+Ouvrir en local — navigation par sections (pipeline, EDA, labellisation, ML, synthèse, notebooks).
 
 ---
 
@@ -218,7 +218,7 @@ Détails : [`docs/LABELISATION.md`](docs/LABELISATION.md)
 |----------|---------|
 | L1 Rapport | [`docs/RAPPORT_PROJET.md`](docs/RAPPORT_PROJET.md) + Notebooks + [`docs/LABELISATION.md`](docs/LABELISATION.md) |
 | L2 Code | Ce dépôt + README |
-| L3 Soutenance | `Groupe3_profils_atypiques_Final.ipynb` · [`docs/PROMPT_SOUTENANCE_CLAUDE.md`](docs/PROMPT_SOUTENANCE_CLAUDE.md) (slides PPTX) · portail `demo/app.py` |
+| L3 Soutenance | `Groupe3_profils_atypiques_Final.ipynb` · [`docs/PROMPT_SOUTENANCE_CLAUDE.md`] (slides PPTX) · portail `demo/app.py` |
 | L4 Rôles | [`docs/EQUIPE_ROLES.md`](docs/EQUIPE_ROLES.md) |
 
 ---
